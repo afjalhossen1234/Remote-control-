@@ -1,9 +1,1 @@
-{
-  "name": "lock-screen-pentest",
-  "version": "1.0.0",
-  "description": "Authorized security assessment tool",
-  "private": true,
-  "dependencies": {
-    "@vercel/kv": "^2.0.0"
-  }
-}
+
